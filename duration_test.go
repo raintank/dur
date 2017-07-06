@@ -2,7 +2,7 @@ package dur
 
 import "testing"
 
-func TestUsec(t *testing.T) {
+func TestDuration(t *testing.T) {
 	var cases = []struct {
 		in  string
 		out uint32
@@ -29,7 +29,7 @@ func TestUsec(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		d, err := ParseUsec(c.in)
+		d, err := ParseDuration(c.in)
 		if (err != nil) != c.err {
 			t.Fatalf("case %d %q: expected err %t, got err %s", i, c.in, c.err, err)
 		}
