@@ -32,21 +32,31 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 
 	parts := strings.Fields(s)
 	base := now
+	next := 0
 
 	for i, p := range parts {
+		if next > i {
+			continue
+		}
+		next = i+1
+
+		hour, min, sec := base.Clock()
+		if i == 0 {
+			hour, min, sec = 0, 0, 0
+		}
 	ParseSwitch:
 		switch p {
 		case "now":
 			base = now
 		case "today":
 			year, month, day := now.Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "yesterday":
 			year, month, day := now.AddDate(0, 0, -1).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "tomorrow":
 			year, month, day := now.AddDate(0, 0, 1).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "midnight":
 			year, month, day := base.Date()
 			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
@@ -57,26 +67,26 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 			year, month, day := base.Date()
 			base = time.Date(year, month, day, 16, 0, 0, 0, loc)
 		case "monday":
-			year, month, day := RewindToWeekday(now, time.Monday).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			year, month, day := RewindToWeekday(base, time.Monday).Date()
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "tuesday":
 			year, month, day := RewindToWeekday(now, time.Tuesday).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "wednesday":
 			year, month, day := RewindToWeekday(now, time.Wednesday).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "thursday":
 			year, month, day := RewindToWeekday(now, time.Thursday).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "friday":
 			year, month, day := RewindToWeekday(now, time.Friday).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "saturday":
 			year, month, day := RewindToWeekday(now, time.Saturday).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "sunday":
 			year, month, day := RewindToWeekday(now, time.Sunday).Date()
-			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		default:
 			if p[0] == '-' {
 				dur, err := ParseNDuration(p[1:])
@@ -107,29 +117,31 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 				}
 			}
 			if IsTime(p) {
-				hour, minute, err := ParseTime(p)
+				h, m, err := ParseTime(p)
 				if err != nil {
 					return 0, err
 				}
 				year, month, day := base.Date()
-				base = time.Date(year, month, day, hour, minute, 0, 0, loc)
+				base = time.Date(year, month, day, h, m, 0, 0, loc)
 				break
 			}
 			for _, format := range absoluteTimeFormats {
 				n, err := time.ParseInLocation(format, p, loc)
 				if err == nil {
-					base = n
+					year, month, day := n.Date()
+					base = time.Date(year, month, day, hour, min, sec, 0, loc)
 					break ParseSwitch
 				}
 			}
 			// see if we can parse out <monthname> <num>, or <mon-short> <num>
-			if len(s) > i+1 {
+			if len(parts) > i+1 {
 				tmp := parts[i] + " " + parts[i+1]
 				n, err := time.ParseInLocation("January 2", tmp, loc)
 				if err == nil {
 					y, _, _ := base.Date()
 					_, m, d := n.Date()
-					base = time.Date(y, m, d, 0, 0, 0, 0, loc)
+					base = time.Date(y, m, d, hour, min, sec, 0, loc)
+					next = i+2
 					break
 				}
 
@@ -137,7 +149,8 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 				if err == nil {
 					y, _, _ := base.Date()
 					_, m, d := n.Date()
-					base = time.Date(y, m, d, 0, 0, 0, 0, loc)
+					base = time.Date(y, m, d, hour, min, sec, 0, loc)
+					next = i+2
 					break
 				}
 			}
