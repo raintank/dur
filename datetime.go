@@ -99,12 +99,19 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 	// where:
 	// * time can be like noon, midnight, teatime, <int>am, <int>AM, <int>pm, <int>PM, or HH:MM
 	// * date can be like YYYYMMDD, MM/DD/YY or MM/DD/YYYY
-	// or: <monthname> <num>, which we'll try first
+	// or: <monthname> <num>, or <mon-short> <num> which we'll try first
 
 	// Go can't parse _ in date strings. this is for HH:MM_YYMMDD
 	s = strings.Replace(s, "_", " ", 1)
 
 	base, err := time.ParseInLocation("January 2", s, loc)
+	if err == nil {
+		y, _, _ := now.Date()
+		_, m, d := base.Date()
+		return uint32(time.Date(y, m, d, 0, 0, 0, 0, loc).Unix()), nil
+	}
+
+	base, err = time.ParseInLocation("Jan 2", s, loc)
 	if err == nil {
 		y, _, _ := now.Date()
 		_, m, d := base.Date()
