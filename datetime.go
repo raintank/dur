@@ -9,7 +9,7 @@ import (
 
 //var absoluteTimeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
 
-var absoluteTimeFormats = []string{"15:04 20060102", "20060102", "01/02/06", "01/02/2006"}
+var absoluteTimeFormats = []string{"20060102", "01/02/06", "01/02/2006"}
 var errUnknownDateTimeFormat = errors.New("parse error. unknown DateTime format")
 var errUnknownTimeFormat = errors.New("parse error. unknown Time format")
 
@@ -18,188 +18,149 @@ var errUnknownTimeFormat = errors.New("parse error. unknown Time format")
 // 'now' is a reference, in case a relative specification is given.
 // 'def' is a default in case an empty specification is given.
 func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uint32, error) {
-	now = now.In(loc)
-	switch s {
-	case "":
+	if s == "" {
 		return uint32(def), nil
-	case "now":
-		return uint32(now.Unix()), nil
-	case "today":
-		year, month, day := now.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "midnight":
-		year, month, day := now.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "noon":
-		year, month, day := now.Date()
-		return uint32(time.Date(year, month, day, 12, 0, 0, 0, loc).Unix()), nil
-	case "teatime":
-		year, month, day := now.Date()
-		return uint32(time.Date(year, month, day, 16, 0, 0, 0, loc).Unix()), nil
-	case "yesterday":
-		base := now.AddDate(0, 0, -1)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "tomorrow":
-		base := now.AddDate(0, 0, 1)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
 	}
 
-	// try negative relative duration offset
-	if s[0] == '-' {
-		dur, err := ParseNDuration(s[1:])
-		if err == nil {
-			return uint32(now.Add(-time.Duration(dur) * time.Second).Unix()), nil
-		}
-		return 0, err
-	}
+	now = now.In(loc)
+	s = strings.Replace(s, "-", " -", -1) // add space for splitting
+	s = strings.Replace(s, "+", " +", -1) // add space for splitting
+	s = strings.Replace(s, "_", " ", 1)   // this is for HH:MM_YYMMDD
 
-	// not documented, though supported by graphite so we must do the same.
-	// https://github.com/raintank/metrictank/issues/673
-	if strings.HasPrefix(s, "now-") {
-		dur, err := ParseNDuration(s[4:])
-		if err == nil {
-			return uint32(now.Add(-time.Duration(dur) * time.Second).Unix()), nil
-		}
-		return 0, err
-	}
-	if strings.HasPrefix(s, "now+") {
-		dur, err := ParseNDuration(s[4:])
-		if err == nil {
-			return uint32(now.Add(time.Duration(dur) * time.Second).Unix()), nil
-		}
-		return 0, err
-	}
+	parts := strings.Fields(s)
+	base := now
 
-	// if it's a plain integer, interpret it as a unix timestamp
-	// except if it's a series of numbers that looks like YYYYMMDD,
-	// which will be processed further down.
-	// if it's not a plain integer, we proceed trying more things
-	if len(s) != 8 {
-		i, err := strconv.Atoi(s)
-		if err == nil {
-			return uint32(i), nil
-		}
-	}
-
-	// try positive relative duration offset like 5s or 5h30min
-	// (we already covered negative offsets higher up)
-	// since this also accepts a plain number, just like above,
-	// we should only do this if the input is not 8 chars
-	if len(s) != 8 {
-		dur, err := ParseNDuration(s)
-		if err == nil {
-			return uint32(now.Add(-time.Duration(dur) * time.Second).Unix()), nil
-		}
-	}
-
-	// try remaining absolute formats.
-	// they are either in the following shape: [<time> ]<date>
-	// where:
-	// * time can be like noon, midnight, teatime, <int>am, <int>AM, <int>pm, <int>PM, or HH:MM
-	// * date can be like YYYYMMDD, MM/DD/YY or MM/DD/YYYY
-	// or: <monthname> <num>, or <mon-short> <num> which we'll try first
-
-	// Go can't parse _ in date strings. this is for HH:MM_YYMMDD
-	s = strings.Replace(s, "_", " ", 1)
-
-	base, err := time.ParseInLocation("January 2", s, loc)
-	if err == nil {
-		y, _, _ := now.Date()
-		_, m, d := base.Date()
-		return uint32(time.Date(y, m, d, 0, 0, 0, 0, loc).Unix()), nil
-	}
-
-	base, err = time.ParseInLocation("Jan 2", s, loc)
-	if err == nil {
-		y, _, _ := now.Date()
-		_, m, d := base.Date()
-		return uint32(time.Date(y, m, d, 0, 0, 0, 0, loc).Unix()), nil
-	}
-
-	var ts, ds string
-	split := strings.Fields(s)
-
-	switch {
-	case len(split) == 1:
-		ds = s
-	case len(split) == 2:
-		ts, ds = split[0], split[1]
-	case len(split) > 2:
-		return 0, errUnknownDateTimeFormat
-	}
-
-	// first we need to set our "now" to the right date.
-
-dateStringSwitch:
-	switch ds {
-	case "today":
-		base = now
-	case "yesterday":
-		base = now.AddDate(0, 0, -1)
-	case "tomorrow":
-		base = now.AddDate(0, 0, 1)
-	case "monday":
-		base = RewindToWeekday(now, time.Monday)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "tuesday":
-		base = RewindToWeekday(now, time.Tuesday)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "wednesday":
-		base = RewindToWeekday(now, time.Wednesday)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "thursday":
-		base = RewindToWeekday(now, time.Thursday)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "friday":
-		base = RewindToWeekday(now, time.Friday)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "saturday":
-		base = RewindToWeekday(now, time.Saturday)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	case "sunday":
-		base = RewindToWeekday(now, time.Sunday)
-		year, month, day := base.Date()
-		return uint32(time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()), nil
-	default:
-		for _, format := range absoluteTimeFormats {
-			base, err = time.ParseInLocation(format, ds, loc)
-			if err == nil {
-				break dateStringSwitch
+	for i, p := range parts {
+	ParseSwitch:
+		switch p {
+		case "now":
+			base = now
+		case "today":
+			year, month, day := now.Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "yesterday":
+			year, month, day := now.AddDate(0, 0, -1).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "tomorrow":
+			year, month, day := now.AddDate(0, 0, 1).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "midnight":
+			year, month, day := base.Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "noon":
+			year, month, day := base.Date()
+			base = time.Date(year, month, day, 12, 0, 0, 0, loc)
+		case "teatime":
+			year, month, day := base.Date()
+			base = time.Date(year, month, day, 16, 0, 0, 0, loc)
+		case "monday":
+			year, month, day := RewindToWeekday(now, time.Monday).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "tuesday":
+			year, month, day := RewindToWeekday(now, time.Tuesday).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "wednesday":
+			year, month, day := RewindToWeekday(now, time.Wednesday).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "thursday":
+			year, month, day := RewindToWeekday(now, time.Thursday).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "friday":
+			year, month, day := RewindToWeekday(now, time.Friday).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "saturday":
+			year, month, day := RewindToWeekday(now, time.Saturday).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		case "sunday":
+			year, month, day := RewindToWeekday(now, time.Sunday).Date()
+			base = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		default:
+			if p[0] == '-' {
+				dur, err := ParseNDuration(p[1:])
+				if err != nil {
+					return 0, err
+				}
+				base = base.Add(-time.Duration(dur) * time.Second)
+				break
 			}
+			if p[0] == '+' {
+				dur, err := ParseNDuration(p[1:])
+				if err != nil {
+					return 0, err
+				}
+				base = base.Add(time.Duration(dur) * time.Second)
+				break
+			}
+			// if it's a plain integer, interpret it as a unix timestamp
+			// except if it's a series of numbers that looks like YYYYMMDD,
+			// which will be processed further down.
+			// if it's not a plain integer, we proceed trying more things
+			if len(p) != 8 {
+				i, err := strconv.Atoi(p)
+				if err == nil {
+					base = time.Unix(int64(i), 0)
+					base.In(loc)
+					break
+				}
+			}
+			if IsTime(p) {
+				hour, minute, err := ParseTime(p)
+				if err != nil {
+					return 0, err
+				}
+				year, month, day := base.Date()
+				base = time.Date(year, month, day, hour, minute, 0, 0, loc)
+				break
+			}
+			for _, format := range absoluteTimeFormats {
+				n, err := time.ParseInLocation(format, p, loc)
+				if err == nil {
+					base = n
+					break ParseSwitch
+				}
+			}
+			// see if we can parse out <monthname> <num>, or <mon-short> <num>
+			if len(s) > i+1 {
+				tmp := parts[i] + " " + parts[i+1]
+				n, err := time.ParseInLocation("January 2", tmp, loc)
+				if err == nil {
+					y, _, _ := base.Date()
+					_, m, d := n.Date()
+					base = time.Date(y, m, d, 0, 0, 0, 0, loc)
+					break
+				}
+
+				n, err = time.ParseInLocation("Jan 2", tmp, loc)
+				if err == nil {
+					y, _, _ := base.Date()
+					_, m, d := n.Date()
+					base = time.Date(y, m, d, 0, 0, 0, 0, loc)
+					break
+				}
+			}
+			// we ran out of options that we recognize
+			return 0, errUnknownDateTimeFormat
 		}
-		return 0, errUnknownDateTimeFormat
-	}
-	if ts == "" {
-		return uint32(base.Unix()), nil
-	}
 
-	hour, minute, err := ParseTime(ts)
-	if err != nil {
-		return 0, err
 	}
+	return uint32(base.Unix()), nil
+}
 
-	year, month, day := base.Date()
-	return uint32(time.Date(year, month, day, hour, minute, 0, 0, loc).Unix()), nil
+func IsTime(s string) bool {
+	if strings.Contains(s, ":") {
+		return true
+	}
+	if strings.HasSuffix(s, "am") || strings.HasSuffix(s, "AM") {
+		return true
+	}
+	if strings.HasSuffix(s, "pm") || strings.HasSuffix(s, "PM") {
+		return true
+	}
+	return false
 }
 
 // ParseTime parses a time and returns hours and minutes
 func ParseTime(s string) (hour, minute int, err error) {
-	switch s {
-	case "midnight":
-		return 0, 0, nil
-	case "noon":
-		return 12, 0, nil
-	case "teatime":
-		return 16, 0, nil
-	}
 	var offset int
 	if strings.HasSuffix(s, "am") || strings.HasSuffix(s, "AM") {
 		s = s[:len(s)-2]
