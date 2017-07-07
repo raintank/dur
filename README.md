@@ -32,9 +32,9 @@ Supported formats:
 * `YYYYMMDD`
 * `MM/DD/YY` 
 * `integer`: unix timestamp
-* `<monthname>+<num>` like `january+3` or `march+8`
+* `<monthname> <num>` like `january 3` or `march 8`
 * `monday`, `tuesday` last (or current day if matching) day.
-* `at` formats : `now`, `today`, `midnight`, `noon`, `teatime`, `midnight yesterday`, `6pm tomorrow`, `3AM+yesterday`
+* `at` formats : `now`, `today`, `midnight`, `noon`, `teatime`, `midnight yesterday`, `6pm tomorrow`, `3AM yesterday`
 
 See the code and unit tests for details.
 

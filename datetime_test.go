@@ -70,12 +70,12 @@ func TestParseDateTime(t *testing.T) {
 		{"today", jul8, "00:00:00 2017-Jul-08", nil},     // graphite assumes 00:00:00
 		{"tomorrow", jul8, "00:00:00 2017-Jul-09", nil},  // graphite assumes 00:00:00 I think, but hard to tell, because graphite doesn't return future data
 
-		{"noon+yesterday", jul8, "12:00:00 2017-Jul-07", nil},
-		{"3am+tomorrow", jul8, "03:00:00 2017-Jul-09", nil},
-		{"3AM+tomorrow", jul8, "03:00:00 2017-Jul-09", nil},
-		{"6pm+today", jul8, "18:00:00 2017-Jul-08", nil},
-		{"6PM+today", jul8, "18:00:00 2017-Jul-08", nil},
-		{"january+1", jul8, "00:00:00 2017-Jan-01", nil},
+		{"noon yesterday", jul8, "12:00:00 2017-Jul-07", nil},
+		{"3am tomorrow", jul8, "03:00:00 2017-Jul-09", nil},
+		{"3AM tomorrow", jul8, "03:00:00 2017-Jul-09", nil},
+		{"6pm today", jul8, "18:00:00 2017-Jul-08", nil},
+		{"6PM today", jul8, "18:00:00 2017-Jul-08", nil},
+		{"january 1", jul8, "00:00:00 2017-Jan-01", nil},
 		{"monday", jul8, "00:00:00 2017-Jul-03", nil},
 		{"monday", jul9, "00:00:00 2017-Jul-03", nil},
 		{"monday", jul10, "00:00:00 2017-Jul-10", nil},
@@ -85,7 +85,6 @@ func TestParseDateTime(t *testing.T) {
 		{"noon 08/12/2002", jul8, "12:00:00 2002-Aug-12", nil},
 		{"midnight 20170812", jul8, "00:00:00 2017-Aug-12", nil},
 		{"noon tomorrow", jul8, "12:00:00 2017-Jul-09", nil},
-		{"noon+tomorrow", jul8, "12:00:00 2017-Jul-09", nil},
 	}
 
 	for i, tt := range tests {

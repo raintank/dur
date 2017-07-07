@@ -103,8 +103,6 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 
 	// Go can't parse _ in date strings. this is for HH:MM_YYMMDD
 	s = strings.Replace(s, "_", " ", 1)
-	// this is for 3pm+yesterday etc
-	s = strings.Replace(s, "+", " ", 1)
 
 	base, err := time.ParseInLocation("January 2", s, loc)
 	if err == nil {
