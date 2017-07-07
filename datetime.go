@@ -193,32 +193,31 @@ func ParseTime(s string) (hour, minute int, err error) {
 	case "teatime":
 		return 16, 0, nil
 	}
+	var offset int
 	if strings.HasSuffix(s, "am") || strings.HasSuffix(s, "AM") {
-		hour, err := strconv.Atoi(s[:len(s)-2])
-		return hour, 0, err
+		s = s[:len(s)-2]
 	}
 	if strings.HasSuffix(s, "pm") || strings.HasSuffix(s, "PM") {
-		hour, err := strconv.Atoi(s[:len(s)-2])
-		return hour + 12, 0, err
+		offset = 12
+		s = s[:len(s)-2]
 	}
 
 	parts := strings.Split(s, ":")
-
-	if len(parts) != 2 {
+	if len(parts) > 2 {
 		return 0, 0, errUnknownTimeFormat
 	}
-
+	if len(parts) == 2 {
+		minute, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return 0, 0, errUnknownTimeFormat
+		}
+	}
 	hour, err = strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, 0, errUnknownTimeFormat
 	}
 
-	minute, err = strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, errUnknownTimeFormat
-	}
-
-	return hour, minute, nil
+	return hour + offset, minute, nil
 }
 
 // RewindToWeekday moves a datetime back to the last occurence of the given weekday (potentially that day without needing to seek back)

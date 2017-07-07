@@ -50,6 +50,7 @@ func TestParseDateTime(t *testing.T) {
 		{"16:00_20110501", jul8, "16:00:00 2011-May-01", nil},
 
 		// HH:MM YYMMDD
+		{"4:00 20110501", jul8, "04:00:00 2011-May-01", nil},
 		{"04:00 20110501", jul8, "04:00:00 2011-May-01", nil},
 		{"16:00 20110501", jul8, "16:00:00 2011-May-01", nil},
 
@@ -75,6 +76,9 @@ func TestParseDateTime(t *testing.T) {
 		{"3AM tomorrow", jul8, "03:00:00 2017-Jul-09", nil},
 		{"6pm today", jul8, "18:00:00 2017-Jul-08", nil},
 		{"6PM today", jul8, "18:00:00 2017-Jul-08", nil},
+		{"6:00PM today", jul8, "18:00:00 2017-Jul-08", nil},
+		{"06:00PM today", jul8, "18:00:00 2017-Jul-08", nil},
+		{"06PM today", jul8, "18:00:00 2017-Jul-08", nil},
 		{"january 1", jul8, "00:00:00 2017-Jan-01", nil},
 		{"monday", jul8, "00:00:00 2017-Jul-03", nil},
 		{"monday", jul9, "00:00:00 2017-Jul-03", nil},
