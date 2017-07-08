@@ -114,3 +114,24 @@ func TestParseDateTime(t *testing.T) {
 		}
 	}
 }
+
+var res uint32
+
+func BenchmarkParseDateTime(b *testing.B) {
+	patts := []string{"now", "-7d", "now-7d10h3min", "today", "monday", "march 10", "04:00 20110501", "4pm 20110501", "1234567890", "teatime 12/25/1998"}
+	loc, err := time.LoadLocation("CET")
+	if err != nil {
+		panic(err)
+	}
+	now := time.Date(2017, time.July, 8, 15, 30, 0, 0, loc) // saturday 8 Jul 2017 15:30 CET
+	for _, patt := range patts {
+		b.Run(patt, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				res, err = ParseDateTime(patt, loc, now, 0)
+			}
+			if err != nil {
+				panic(err)
+			}
+		})
+	}
+}
