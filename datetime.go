@@ -35,7 +35,7 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 		if next > i {
 			continue
 		}
-		next = i+1
+		next = i + 1
 
 		hour, min, sec := base.Clock()
 		if i == 0 {
@@ -67,22 +67,22 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 			year, month, day := RewindToWeekday(base, time.Monday).Date()
 			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "tuesday":
-			year, month, day := RewindToWeekday(now, time.Tuesday).Date()
+			year, month, day := RewindToWeekday(base, time.Tuesday).Date()
 			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "wednesday":
-			year, month, day := RewindToWeekday(now, time.Wednesday).Date()
+			year, month, day := RewindToWeekday(base, time.Wednesday).Date()
 			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "thursday":
-			year, month, day := RewindToWeekday(now, time.Thursday).Date()
+			year, month, day := RewindToWeekday(base, time.Thursday).Date()
 			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "friday":
-			year, month, day := RewindToWeekday(now, time.Friday).Date()
+			year, month, day := RewindToWeekday(base, time.Friday).Date()
 			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "saturday":
-			year, month, day := RewindToWeekday(now, time.Saturday).Date()
+			year, month, day := RewindToWeekday(base, time.Saturday).Date()
 			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		case "sunday":
-			year, month, day := RewindToWeekday(now, time.Sunday).Date()
+			year, month, day := RewindToWeekday(base, time.Sunday).Date()
 			base = time.Date(year, month, day, hour, min, sec, 0, loc)
 		default:
 			if p[0] == '-' {
@@ -138,7 +138,7 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 					y, _, _ := base.Date()
 					_, m, d := n.Date()
 					base = time.Date(y, m, d, hour, min, sec, 0, loc)
-					next = i+2
+					next = i + 2
 					break
 				}
 
@@ -147,7 +147,7 @@ func ParseDateTime(s string, loc *time.Location, now time.Time, def uint32) (uin
 					y, _, _ := base.Date()
 					_, m, d := n.Date()
 					base = time.Date(y, m, d, hour, min, sec, 0, loc)
-					next = i+2
+					next = i + 2
 					break
 				}
 			}
