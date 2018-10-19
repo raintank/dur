@@ -102,3 +102,52 @@ func ParseDuration(s string) (uint32, error) {
 	}
 	return sum, nil
 }
+
+var factors = map[string]uint32{
+	"y": 60 * 60 * 24 * 365,
+	"w": 60 * 60 * 24 * 7,
+	"d": 60 * 60 * 24,
+	"h": 60 * 60,
+	"m": 60,
+	"s": 1,
+}
+
+// FormatDuration takes a number of seconds and returns a string represention
+// that can be parsed by ParseDuration(). Due to its ambiguity, we dont
+// use "month" units in the returned value.
+func FormatDuration(seconds uint32) string {
+	output := ""
+
+	if seconds == 0 {
+		return "0s"
+	}
+
+	var numUnits uint32
+	for seconds > 0 {
+		if seconds > factors["y"] {
+			numUnits = seconds / factors["y"]
+			seconds = seconds - (numUnits * factors["y"])
+			output += fmt.Sprintf("%dy", numUnits)
+		} else if seconds > factors["w"] {
+			numUnits = seconds / factors["w"]
+			seconds = seconds - (numUnits * factors["w"])
+			output += fmt.Sprintf("%dw", numUnits)
+		} else if seconds > factors["d"] {
+			numUnits = seconds / factors["d"]
+			seconds = seconds - (numUnits * factors["d"])
+			output += fmt.Sprintf("%dd", numUnits)
+		} else if seconds > factors["h"] {
+			numUnits = seconds / factors["h"]
+			seconds = seconds - (numUnits * factors["h"])
+			output += fmt.Sprintf("%dh", numUnits)
+		} else if seconds > factors["m"] {
+			numUnits = seconds / factors["m"]
+			seconds = seconds - (numUnits * factors["m"])
+			output += fmt.Sprintf("%dm", numUnits)
+		} else {
+			output += fmt.Sprintf("%ds", seconds)
+			seconds = 0
+		}
+	}
+	return output
+}
