@@ -113,8 +113,8 @@ func ParseDuration(s string) (uint32, error) {
 	return sum, nil
 }
 
-// FormatDuration takes a number of seconds and returns a string represention
-// that can be parsed by ParseDuration(). Due to its ambiguity, we dont
+// FormatDuration takes a number of seconds and returns a minimal string represention
+// that can be parsed by ParseDuration(). Due to its ambiguity and length, we don't
 // use "month" units in the returned value.
 func FormatDuration(seconds uint32) string {
 	output := ""
