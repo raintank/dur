@@ -97,10 +97,10 @@ func TestParseDateTime(t *testing.T) {
 	for i, tt := range tests {
 		ts, err := ParseDateTime(tt.in, loc, tt.now, 0)
 		if tt.expErr == nil && err != nil {
-			t.Errorf("case %d: ParseDateTime(%q, %d, 0) expected err nil, got err %v", i, tt.in, tt.now, err)
+			t.Errorf("case %d: ParseDateTime(%q, %s, 0) expected err nil, got err %v", i, tt.in, tt.now, err)
 		}
 		if tt.expErr != nil && err == nil {
-			t.Errorf("case %d: ParseDateTime(%q, %d, 0) expected err %v, got err nil", i, tt.in, tt.now, tt.expErr)
+			t.Errorf("case %d: ParseDateTime(%q, %s, 0) expected err %v, got err nil", i, tt.in, tt.now, tt.expErr)
 		}
 
 		expTime, err := time.ParseInLocation(outFormat, tt.expTsStr, loc)
@@ -110,7 +110,7 @@ func TestParseDateTime(t *testing.T) {
 		expTs := uint32(expTime.Unix())
 
 		if ts != expTs {
-			t.Errorf("case %d: ParseDateTime(%q, %d, 0) expected %d (%q) got %d (%q)", i, tt.in, tt.now, expTs, tt.expTsStr, ts, time.Unix(int64(ts), 0).In(loc).Format(outFormat))
+			t.Errorf("case %d: ParseDateTime(%q, %s, 0) expected %d (%q) got %d (%q)", i, tt.in, tt.now, expTs, tt.expTsStr, ts, time.Unix(int64(ts), 0).In(loc).Format(outFormat))
 		}
 	}
 }
